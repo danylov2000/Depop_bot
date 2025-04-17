@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 from playwright.sync_api import TimeoutError
 
-import functions
+
 from logger import *
 import time
 
@@ -40,10 +40,8 @@ class App:
 
         self.page.locator("#searchBar__input").first.fill(text)
         self.page.keyboard.press("Enter")
+        logger.info("Search completed")
 
-
-        items = self.page.locator("li.styles_listItem__Uv9lb").all()
-        return items
 
     def collect_urls(self):
         current_element = 0
@@ -61,12 +59,18 @@ class App:
                 self.page.mouse.wheel(0, 50)
 
                 attribute = url.get_attribute("href")
-                self.collected_urls.add(attribute)
+                self.collected_urls.add(f"https://www.depop.com{attribute}")
                 url.highlight()
 
                 current_element += 1
         except TimeoutError:
             logger.info("Parsing finished")
+
+    def get_item_info(self):
+        for link in self.collected_urls:
+            self.page.goto(link)
+            time.sleep(5)
+
 
 
     # styles_loaderWrapper__RDUnD
@@ -77,5 +81,6 @@ class App:
         self.accept_cookies()
         self.search(search_text)
         self.collect_urls()
+        self.get_item_info()
         # self.scrape_items()
         self.close_browser()
