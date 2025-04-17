@@ -1,0 +1,6 @@
+.idea/
+__pycache__/
+script.py
+gmail_code.py
+depop_scraper.log
+client_secret.json
