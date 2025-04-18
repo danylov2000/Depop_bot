@@ -1,7 +1,6 @@
 from playwright.sync_api import sync_playwright
 from playwright.sync_api import TimeoutError
 
-
 from logger import *
 import time
 
@@ -13,6 +12,7 @@ class App:
         self.browser = None
         self.page = None
         self.collected_urls = set()
+        self.item_info = None
 
     def launch_browser(self):
         playwright = sync_playwright().start()
@@ -42,10 +42,10 @@ class App:
         self.page.keyboard.press("Enter")
         logger.info("Search completed")
 
-
     def collect_urls(self):
         current_element = 0
-        total_items = self.page.locator("#main > div > div.styles_header__lny1Z > div > h1 > span._text_bevez_41._shared_bevez_6._normal_bevez_51.styles_searchQuerySecondary__j_1rr").first.text_content()
+        total_items = self.page.locator(
+            "#main > div > div.styles_header__lny1Z > div > h1 > span._text_bevez_41._shared_bevez_6._normal_bevez_51.styles_searchQuerySecondary__j_1rr").first.text_content()
         total_items = int(total_items.strip("(").strip(" results)"))
         urls = self.page.locator('ol.styles_productGrid__Cpzyf a.styles_unstyledLink__DsttP')
         try:
@@ -66,12 +66,24 @@ class App:
         except TimeoutError:
             logger.info("Parsing finished")
 
-    def get_item_info(self):
-        for link in self.collected_urls:
-            self.page.goto(link)
-            time.sleep(5)
+    def get_item_info(self, desired_price: float):
+        self.item_info = []
+        for i, link in enumerate(self.collected_urls, 1):
+            try:
+                self.page.goto(link)
+                self.page.wait_for_selector("h1", timeout=5000)
+                self.page.wait_for_selector('p[class*="styles_price__"]', timeout=5000)
 
+                price = float(self.page.locator('p[class*="styles_price__"]').first.text_content().strip("$"))
+                title = self.page.locator("h1").first.text_content().strip()
 
+                if price <= desired_price:
+
+                    logger.info(f"[{i}] Collected title: {title}, price: {price}")
+                    self.item_info.append({"url": link, "title": title, "price": price})
+
+            except Exception as e:
+                logger.warning(f"Failed to scrape {link}: {e}")
 
     # styles_loaderWrapper__RDUnD
 
@@ -81,6 +93,6 @@ class App:
         self.accept_cookies()
         self.search(search_text)
         self.collect_urls()
-        self.get_item_info()
+        self.get_item_info(20.00)
         # self.scrape_items()
         self.close_browser()
