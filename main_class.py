@@ -71,28 +71,52 @@ class App:
         for i, link in enumerate(self.collected_urls, 1):
             try:
                 self.page.goto(link)
-                self.page.wait_for_selector("h1", timeout=5000)
-                self.page.wait_for_selector('p[class*="styles_price__"]', timeout=5000)
+                title = self.page.wait_for_selector("h1", timeout=5000)  # title
+                price_selector = self.page.wait_for_selector('p.styles_price__H8qdh', timeout=5000)  # price
 
-                price = float(self.page.locator('p[class*="styles_price__"]').first.text_content().strip("$"))
-                title = self.page.locator("h1").first.text_content().strip()
+                if not title:
+                    logger.info(f"{i}: no title for this item")
+                    price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
+                    if desired_price <= price:
+                        logger.info(f"[{i}], regular price: {price}")
+                        self.item_info.append({"url": link, "price": price})
+                else:
+                    price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
+                    if desired_price <= price:
+                        logger.info(f"[{i}], title: {title,} regular price: {price}")
+                        self.item_info.append({"url": link, "title": title, "price": price})
 
-                if price <= desired_price:
+                # regular_price = self.page.locator('p[class*="styles_price__"]').first
+                # discount_price = self.page.locator(
+                #     'p.styles_price__H8qdh').first
+                # title = self.page.locator("h1").first.text_content().strip()
+                #
+                # if regular_price.is_visible():
+                #     price = float(regular_price.text_content().strip().replace("$", ""))
+                #     if price <= desired_price:
+                #         logger.info(f"[{i}] Collected title: {title}, regular price: {price}")
+                #         self.item_info.append({"url": link, "title": title, "price": price})
+                #
+                # elif discount_price.is_visible():
+                #     price = float(discount_price.text_content().strip().replace("$", ""))
+                #     if price <= desired_price:
+                #         logger.info(f"[{i}] Collected title: {title}, discount price: {price}")
+                #         self.item_info.append({"url": link, "title": title, "price": price})
+                #
+                # else:
+                #     logger.info(f"[{i}] {title}: No price found.")
 
-                    logger.info(f"[{i}] Collected title: {title}, price: {price}")
-                    self.item_info.append({"url": link, "title": title, "price": price})
+
 
             except Exception as e:
                 logger.warning(f"Failed to scrape {link}: {e}")
 
-    # styles_loaderWrapper__RDUnD
-
-    def run(self, search_text):
+    def run(self, search_text, desired_price: float):
         self.launch_browser()
         self.goto_homepage()
         self.accept_cookies()
         self.search(search_text)
         self.collect_urls()
-        self.get_item_info(20.00)
-        # self.scrape_items()
+        self.get_item_info(desired_price)
+
         self.close_browser()
