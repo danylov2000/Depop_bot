@@ -1,8 +1,14 @@
 from playwright.sync_api import sync_playwright
 from playwright.sync_api import TimeoutError
+import requests
 
 from logger import *
 import time
+
+logger = logging.getLogger(__name__)
+
+HOST = "http://127.0.0.1:5000"
+
 
 
 class App:
@@ -11,7 +17,7 @@ class App:
         self.email = email
         self.browser = None
         self.page = None
-        self.collected_urls = set()
+
         self.item_info = None
 
     def launch_browser(self):
@@ -59,57 +65,40 @@ class App:
                 self.page.mouse.wheel(0, 50)
 
                 attribute = url.get_attribute("href")
-                self.collected_urls.add(f"https://www.depop.com{attribute}")
+                server_response = requests.post(f"{HOST}/publish", f"https://www.depop.com{attribute}")
                 url.highlight()
 
                 current_element += 1
         except TimeoutError:
             logger.info("Parsing finished")
 
-    def get_item_info(self, desired_price: float):
-        self.item_info = []
-        for i, link in enumerate(self.collected_urls, 1):
-            try:
-                self.page.goto(link)
-                title = self.page.wait_for_selector("h1", timeout=5000)  # title
-                price_selector = self.page.wait_for_selector('p.styles_price__H8qdh', timeout=5000)  # price
-
-                if not title:
-                    logger.info(f"{i}: no title for this item")
-                    price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
-                    if desired_price <= price:
-                        logger.info(f"[{i}], regular price: {price}")
-                        self.item_info.append({"url": link, "price": price})
-                else:
-                    price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
-                    if desired_price <= price:
-                        logger.info(f"[{i}], title: {title,} regular price: {price}")
-                        self.item_info.append({"url": link, "title": title, "price": price})
-
-                # regular_price = self.page.locator('p[class*="styles_price__"]').first
-                # discount_price = self.page.locator(
-                #     'p.styles_price__H8qdh').first
-                # title = self.page.locator("h1").first.text_content().strip()
-                #
-                # if regular_price.is_visible():
-                #     price = float(regular_price.text_content().strip().replace("$", ""))
-                #     if price <= desired_price:
-                #         logger.info(f"[{i}] Collected title: {title}, regular price: {price}")
-                #         self.item_info.append({"url": link, "title": title, "price": price})
-                #
-                # elif discount_price.is_visible():
-                #     price = float(discount_price.text_content().strip().replace("$", ""))
-                #     if price <= desired_price:
-                #         logger.info(f"[{i}] Collected title: {title}, discount price: {price}")
-                #         self.item_info.append({"url": link, "title": title, "price": price})
-                #
-                # else:
-                #     logger.info(f"[{i}] {title}: No price found.")
+    # def get_item_info(self, desired_price: float):
+    #     self.item_info = []
+    #
+    #     for i, link in enumerate(server_data, 1):
+    #         try:
+    #             self.page.goto(link)
+    #             title = self.page.wait_for_selector("h1", timeout=5000)  # title
+    #             price_selector = self.page.wait_for_selector('p.styles_price__H8qdh', timeout=5000)  # price
+    #
+    #             if not title:
+    #                 logger.info(f"{i}: no title for this item")
+    #                 price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
+    #                 if desired_price <= price:
+    #                     logger.info(f"[{i}], regular price: {price}")
+    #                     self.item_info.append({"url": link, "price": price})
+    #             else:
+    #                 price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
+    #                 if desired_price <= price:
+    #                     logger.info(f"[{i}], title: {title,} regular price: {price}")
+    #                     self.item_info.append({"url": link, "title": title, "price": price})
 
 
 
-            except Exception as e:
-                logger.warning(f"Failed to scrape {link}: {e}")
+
+
+            # except Exception as e:
+            #     logger.warning(f"Failed to scrape {link}: {e}")
 
     def run(self, search_text, desired_price: float):
         self.launch_browser()
@@ -117,6 +106,6 @@ class App:
         self.accept_cookies()
         self.search(search_text)
         self.collect_urls()
-        self.get_item_info(desired_price)
+        # self.get_item_info(desired_price)
 
         self.close_browser()

@@ -6,5 +6,5 @@ logging.basicConfig(
     datefmt='%H:%M:%S', handlers=[
         logging.FileHandler("depop_scraper.log")])
 
-logger = logging.getLogger(__name__)
+
 
