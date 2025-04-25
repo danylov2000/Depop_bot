@@ -100,12 +100,12 @@ class App:
             # except Exception as e:
             #     logger.warning(f"Failed to scrape {link}: {e}")
 
-    def run(self, search_text, desired_price: float):
+    def run(self, search_text):
         self.launch_browser()
         self.goto_homepage()
         self.accept_cookies()
         self.search(search_text)
         self.collect_urls()
-        # self.get_item_info(desired_price)
+
 
         self.close_browser()
