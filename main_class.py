@@ -65,7 +65,7 @@ class App:
                 self.page.mouse.wheel(0, 50)
 
                 attribute = url.get_attribute("href")
-                server_response = requests.post(f"{HOST}/publish", f"https://www.depop.com{attribute}")
+                server_response = requests.post(f"{HOST}/publish", json={"url": f"https://www.depop.com{attribute}"})
                 url.highlight()
 
                 current_element += 1

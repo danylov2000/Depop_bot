@@ -17,23 +17,37 @@ context = browser.new_context()
 
 page = context.new_page()
 
-def get_info(url):
+def get_info(url, desired_price: float):
     logger.info(f"{url} to parse")
     page.goto(url)
-    title = page.wait_for_selector("h1.styles_title__kWcg1", timeout=5000)  # title
-    price_selector = page.wait_for_selector('p.styles_price__H8qdh', timeout=5000)  # price
-    price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
-    title = title.text_content().strip()
-    print(price, title)
+    try:
+        title = page.wait_for_selector("h1.styles_title__kWcg1", timeout=5000)  # title
+        price_selector = page.wait_for_selector('p.styles_price__H8qdh', timeout=5000)  # price
+        price = float(price_selector.text_content().replace("$", "").strip().replace(",", ""))
+        if not title:
 
-def run():
+            item_info = {"price": price, "url": url}
+            if price <= desired_price:
+                print(f"No title for this item; {item_info}")
+        else:
+            title = title.text_content().strip()
+            item_info = {"title": title, "price": price, "url": url}
+            if price <= desired_price:
+                print(item_info)
+    except Exception as e:
+        print("Error")
+
+def run(desired_price: float):
     while True:
         response = requests.get(f"{HOST}/get")
         if response.status_code == 404:
             time.sleep(5)
         else:
-            get_info(response.text)
+            data = response.json()
+            attribute = data.get("url")
 
-run()
+            get_info(attribute, desired_price)
+
+run(25.00)
 
 
